@@ -46,6 +46,6 @@ setup(name='mlstudio_backend',
     #         ]
     #   },
       cmdclass={'clean': CleanCommand},
-      install_requires=['jinja2', 'pandas', 'numpy', 'sklearn', 'requests', 'gunicorn',
+      install_requires=['jinja2', 'pandas', 'numpy', 'sklearn', 'requests', 'gunicorn', 'duckdb', 'pyarrow',
                         'flask', 'flask-restful', 'werkzeug', 'flask-jwt-extended', 'flask-cors',
                         'sqlalchemy', 'six', 'pika', 'fastparquet', 'elasticsearch', 'persistqueue'])
