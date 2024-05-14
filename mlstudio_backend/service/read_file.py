@@ -18,7 +18,6 @@ def agGridGetRows(filepath : str, startRow : int, endRow : int) :
     res['dataRow'] = r
     res['success'] = True
 
-    print(res)
     return res
 
 

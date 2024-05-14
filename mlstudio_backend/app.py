@@ -29,6 +29,8 @@ def duckdb(request, option):
         startRow = data['startRow']
         endRow = data['endRow']
 
+        print(file_path)
+
         data = read_file.agGridGetRows(filepath=file_path, startRow=startRow, endRow=endRow)
         rtn = {'status': True, 'reason': 'success', 'data' : data}
 

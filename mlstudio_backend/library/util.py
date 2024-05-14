@@ -82,3 +82,19 @@ class Response:
         if not data:
             return jsonify({'status': status, 'statusText': msg})
         return jsonify({'status': status, 'statusText': msg, 'data': data})
+
+
+class SingletonType(type):
+    def __call__(cls, *args, **kwargs):
+        """
+        싱글톤 타입 클래스 구현
+
+        :param args:
+        :param kwargs:
+        :return: 싱글톤 타입 인스턴스
+        """
+        try:
+            return cls.__instance
+        except AttributeError:
+            cls.__instance = super(SingletonType, cls).__call__(*args, **kwargs)
+            return cls.__instance
