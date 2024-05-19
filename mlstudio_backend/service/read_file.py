@@ -9,15 +9,15 @@ def getRowCount(filepath : str, sql : str = '') :
     if filepath.lower().endswith(('.parquet', '.parq')) :
         read_function = 'read_parquet'
 
-    sql = f"SELECT count(*) AS row_count \nFROM {read_function}('{filepath}')"
+    sql_query = f"SELECT count(*) AS row_count \nFROM {read_function}('{filepath}')"
     if sql != '' :
-        sql = f"SELECT count(*) as row_count FROM ({sql})"
+        sql_query = f"SELECT count(*) as row_count FROM ({sql})"
 
     print('----------- count ---------------')
-    print(sql)
+    print(sql_query)
     print('--------------------------')
 
-    return duckdb.sql(sql).df().replace({np.nan: 'NaN'}).to_dict('records')[0]
+    return duckdb.sql(sql_query).df().replace({np.nan: 'NaN'}).to_dict('records')[0]
 
 def getColumnsInfo(filepath : str, sql : str = '') :
     if not filepath.lower().endswith(('.csv', '.parquet', '.parq')) :
@@ -27,10 +27,9 @@ def getColumnsInfo(filepath : str, sql : str = '') :
     if filepath.lower().endswith(('.parquet', '.parq')) :
         read_function = 'read_parquet'
     
-    if sql == '' :
-        sql = f"DESCRIBE SELECT * FROM {read_function}('{filepath}') LIMIT 1"
+    sql_query = f"DESCRIBE SELECT * FROM {read_function}('{filepath}') LIMIT 1"
 
-    return duckdb.sql(sql).df().replace({np.nan: 'NaN'}).to_dict('records')
+    return duckdb.sql(sql_query).df().replace({np.nan: 'NaN'}).to_dict('records')
 
 def agGridGetRows(filepath : str, startRow : int, endRow : int, fields : list, sql : dict ) :
     res = {}
@@ -46,6 +45,9 @@ def agGridGetRows(filepath : str, startRow : int, endRow : int, fields : list, s
         read_function = 'read_parquet'
 
     sqlSearchMode = False
+    print('---- sql ----')
+    print(sql)
+    print('-------------')
     if sql is None or len(sql) < 1 :
         columns = '*'
         if fields is not None and len(fields) > 0:
@@ -70,6 +72,7 @@ def agGridGetRows(filepath : str, startRow : int, endRow : int, fields : list, s
 
     if startRow < 1 :
         res['lastRow'] = getRowCount(filepath, sql_query if sqlSearchMode else '')['row_count']
+        print(f'res[lastRow] : {res["lastRow"]}')
 
         cols = []
         if select_clause != '' and select_clause != '*' :
