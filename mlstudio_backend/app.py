@@ -15,23 +15,25 @@ def heartbeat():
 
 @app.route('/data/<option>', methods=['POST'])
 def data(option):
-    if option == 'duckdb':
-        ret = duckdb(request, option)
+    if option == 'ag_grid_dataview':
+        ret = ag_grid_dataview(request)
     else:
         ret = {'status': False, 'reason': f'"{option}" is unacceptable option.'}
 
     return Response(ret=ret, option='web').get()
 
-def duckdb(request, option):
+def ag_grid_dataview(request):
     try:
         data = request.get_json(force=True)
         file_path = data['file_path'] if 'file_path' in data else ''
         startRow = data['startRow']
         endRow = data['endRow']
+        fields = data['fields'] if 'fields' in data else []
+        sql = data['sql'] if 'sql' in data else {}
 
         print(file_path)
 
-        data = read_file.agGridGetRows(filepath=file_path, startRow=startRow, endRow=endRow)
+        data = read_file.agGridGetRows(filepath=file_path, startRow=startRow, endRow=endRow, fields=fields, sql=sql)
         rtn = {'status': True, 'reason': 'success', 'data' : data}
 
     except BaseException:
