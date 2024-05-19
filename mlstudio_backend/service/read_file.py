@@ -1,7 +1,7 @@
 import duckdb
 import numpy as np
 
-def getRowCount(filepath : str, where : str = '') :
+def getRowCount(filepath : str, sql : str = '') :
     if not filepath.lower().endswith(('.csv', '.parquet', '.parq')) :
         raise TypeError(f'[{filepath}] This file format is not supported.')
 
@@ -10,8 +10,8 @@ def getRowCount(filepath : str, where : str = '') :
         read_function = 'read_parquet'
 
     sql = f"SELECT count(*) AS row_count \nFROM {read_function}('{filepath}')"
-    if where != '' :
-        sql = sql + ' ' + where
+    if sql != '' :
+        sql = f"SELECT count(*) as row_count FROM ({sql})"
 
     print('----------- count ---------------')
     print(sql)
@@ -36,6 +36,7 @@ def agGridGetRows(filepath : str, startRow : int, endRow : int, fields : list, s
     res = {}
     where_clause = ''
     select_clause = ''
+    sql_query = ''
 
     if not filepath.lower().endswith(('.csv', '.parquet', '.parq')) :
         raise TypeError(f'[{filepath}] This file format is not supported.')
@@ -44,29 +45,32 @@ def agGridGetRows(filepath : str, startRow : int, endRow : int, fields : list, s
     if filepath.lower().endswith(('.parquet', '.parq')) :
         read_function = 'read_parquet'
 
+    sqlSearchMode = False
     if sql is None or len(sql) < 1 :
         columns = '*'
         if fields is not None and len(fields) > 0:
             columns = ', '.join(fields)
 
-        sql = f"SELECT {columns} \nFROM {read_function}('{filepath}') \nLIMIT {endRow-startRow} OFFSET {startRow}"
+        sql_query = f"SELECT {columns} \nFROM {read_function}('{filepath}') \nLIMIT {endRow-startRow} OFFSET {startRow}"
     else:
+        sqlSearchMode = True
         select_clause = '*'
         if 'select_clause' in sql:
             select_clause = sql['select_clause']
 
         if 'where_clause' in sql and sql['where_clause']:
             where_clause = '\nWHERE ' + sql['where_clause']
-        sql = f"SELECT {select_clause} \nFROM {read_function}('{filepath}') {where_clause} \nLIMIT {endRow-startRow} OFFSET {startRow}"
+        sql_query = f"SELECT {select_clause} \nFROM {read_function}('{filepath}') {where_clause} \nLIMIT {endRow-startRow} OFFSET {startRow}"
 
     print('--------------------------')
-    print(sql)
+    print(sql_query)
     print('--------------------------')
 
-    r = duckdb.sql(sql).df().replace({np.nan: 'NaN'}).to_dict('records')
+    r = duckdb.sql(sql_query).df().replace({np.nan: 'NaN'}).to_dict('records')
 
     if startRow < 1 :
-        res['lastRow'] = getRowCount(filepath, where_clause)['row_count']
+        res['lastRow'] = getRowCount(filepath, sql_query if sqlSearchMode else '')['row_count']
+
         cols = []
         if select_clause != '' and select_clause != '*' :
             for k, v in r[0].items() :
