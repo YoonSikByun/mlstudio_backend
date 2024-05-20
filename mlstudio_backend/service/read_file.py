@@ -57,7 +57,7 @@ def agGridGetRows(filepath : str, startRow : int, endRow : int, fields : list, s
     else:
         sqlSearchMode = True
         select_clause = '*'
-        if 'select_clause' in sql:
+        if 'select_clause' in sql and sql['select_clause']:
             select_clause = sql['select_clause']
 
         if 'where_clause' in sql and sql['where_clause']:
