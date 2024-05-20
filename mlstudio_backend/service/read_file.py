@@ -13,10 +13,6 @@ def getRowCount(filepath : str, sql : str = '') :
     if sql != '' :
         sql_query = f"SELECT count(*) as row_count FROM ({sql})"
 
-    print('----------- count ---------------')
-    print(sql_query)
-    print('--------------------------')
-
     return duckdb.sql(sql_query).df().replace({np.nan: 'NaN'}).to_dict('records')[0]
 
 def getColumnsInfo(filepath : str, sql : str = '') :
@@ -36,6 +32,7 @@ def agGridGetRows(filepath : str, startRow : int, endRow : int, fields : list, s
     where_clause = ''
     select_clause = ''
     sql_query = ''
+    sql_count_query = ''
 
     if not filepath.lower().endswith(('.csv', '.parquet', '.parq')) :
         raise TypeError(f'[{filepath}] This file format is not supported.')
@@ -45,9 +42,7 @@ def agGridGetRows(filepath : str, startRow : int, endRow : int, fields : list, s
         read_function = 'read_parquet'
 
     sqlSearchMode = False
-    print('---- sql ----')
-    print(sql)
-    print('-------------')
+
     if sql is None or len(sql) < 1 :
         columns = '*'
         if fields is not None and len(fields) > 0:
@@ -63,6 +58,7 @@ def agGridGetRows(filepath : str, startRow : int, endRow : int, fields : list, s
         if 'where_clause' in sql and sql['where_clause']:
             where_clause = '\nWHERE ' + sql['where_clause']
         sql_query = f"SELECT {select_clause} \nFROM {read_function}('{filepath}') {where_clause} \nLIMIT {endRow-startRow} OFFSET {startRow}"
+        sql_count_query = f"SELECT {select_clause} \nFROM {read_function}('{filepath}') {where_clause}"
 
     print('--------------------------')
     print(sql_query)
@@ -71,16 +67,16 @@ def agGridGetRows(filepath : str, startRow : int, endRow : int, fields : list, s
     r = duckdb.sql(sql_query).df().replace({np.nan: 'NaN'}).to_dict('records')
 
     if startRow < 1 :
-        res['lastRow'] = getRowCount(filepath, sql_query if sqlSearchMode else '')['row_count']
+        res['lastRow'] = getRowCount(filepath, sql_count_query if sqlSearchMode else '')['row_count']
         print(f'res[lastRow] : {res["lastRow"]}')
 
         cols = []
         if select_clause != '' and select_clause != '*' :
             for k, v in r[0].items() :
-                cols.append({'column_name' : k, 'null' : 'None', 'key' : 'None', 'default' : 'None', 'extra' : 'None'})
-            res['columnInfo'] = cols
-        else:
-            res['columnInfo'] = getColumnsInfo(filepath)
+                cols.append({'column_name' : k, 'column_type' : 'None', 'null' : 'None', 'key' : 'None', 'default' : 'None', 'extra' : 'None'})
+            res['filteredColumnInfo'] = cols
+
+        res['columnsInfo'] = getColumnsInfo(filepath)
 
     res['dataRow'] = r
     res['success'] = True
