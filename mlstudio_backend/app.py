@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import traceback
 from library.util import Response, get_timestamp
-from service import read_file
+from service import read_file, chart_data
 
 app = Flask(__name__)
 app.config['DEBUG'] = False
@@ -17,6 +17,8 @@ def heartbeat():
 def data(option):
     if option == 'ag_grid_dataview':
         ret = ag_grid_dataview(request)
+    elif option == 'chart_data':
+        ret = get_chart_data(request)
     else:
         ret = {'status': False, 'reason': f'"{option}" is unacceptable option.'}
 
@@ -25,15 +27,15 @@ def data(option):
 def ag_grid_dataview(request):
     try:
         data = request.get_json(force=True)
-        file_path = data['file_path'] if 'file_path' in data else ''
+        filePath = data['filePath'] if 'filePath' in data else ''
         startRow = data['startRow']
         endRow = data['endRow']
         fields = data['fields'] if 'fields' in data else []
         sql = data['sql'] if 'sql' in data else {}
 
-        print(file_path)
+        print(filePath)
 
-        data = read_file.agGridGetRows(filepath=file_path, startRow=startRow, endRow=endRow, fields=fields, sql=sql)
+        data = read_file.agGridGetRows(filePath=filePath, startRow=startRow, endRow=endRow, fields=fields, sql=sql)
         rtn = {'status': True, 'reason': 'success', 'data' : data}
 
     except BaseException:
@@ -42,6 +44,20 @@ def ag_grid_dataview(request):
 
     return rtn
 
+def get_chart_data(request):
+    try:
+        data = request.get_json(force=True)
+        filePath = data['filePath'] if 'filePath' in data else ''
+        data['queryOption']
+  
+        data = chart_data.getChartData(filePath=filePath, queryOption=data['queryOption'])
+        rtn = {'status': True, 'reason': 'success', 'data' : data}
+
+    except BaseException:
+        msg = traceback.format_exc()
+        rtn = {'status': False, 'reason': msg}
+
+    return rtn
 
 def start(standalone_mode=False):
 
