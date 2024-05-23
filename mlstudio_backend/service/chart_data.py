@@ -1,7 +1,7 @@
 import duckdb
 import numpy as np
 
-def scatterChart(filePath : str, read_function : str, queryOption : dict) :
+def queryChartDdata(filePath : str, read_function : str, queryOption : dict) :
 
     xAxis = queryOption['xAxis']
     yAxis = queryOption['yAxis']
@@ -25,9 +25,13 @@ def scatterChart(filePath : str, read_function : str, queryOption : dict) :
         fucntionField = f'MAX({yAxis})'
 
     if fucntionField:
-        sql_query = f"SELECT {xAxis}, {fucntionField} \nFROM {read_function}('{filePath}') \nGROUP BY {yAxis} \nLIMIT {limitCount} OFFSET 0"
+        sql_query = f"SELECT {xAxis}, {fucntionField} \nFROM {read_function}('{filePath}') \nGROUP BY {xAxis} \nLIMIT {limitCount} OFFSET 0"
     else:
         sql_query = f"SELECT {xAxis}, {yAxis} \nFROM {read_function}('{filePath}') \nLIMIT {limitCount} OFFSET 0"
+    
+    print('--------------------------')
+    print(sql_query)
+    print('--------------------------')
     
     return duckdb.sql(sql_query).df().replace({np.nan: 0}).values.tolist()
 
@@ -42,21 +46,19 @@ def getChartData(filePath : str, queryOption : dict) :
     if filePath.lower().endswith(('.parquet', '.parq')) :
         read_function = 'read_parquet'
 
-    chartType = queryOption['chartType']
+    # chartType = queryOption['chartType']
     
     r = None
     min = 0
     max = 0
-    if chartType == 'Scatter':
-        r = scatterChart(filePath, read_function, queryOption)
+
+    r = queryChartDdata(filePath, read_function, queryOption)
         
-        if len(r) > 0:
-            min = max = r[0][1]
-            for i in r:
-                if min > i[1] : min = i[1]
-                if max < i[1] : max = i[1]
-    else:
-        raise TypeError(f'[{chartType}] This chart type is not supported.')
+    if len(r) > 0:
+        min = max = r[0][1]
+        for i in r:
+            if min > i[1] : min = i[1]
+            if max < i[1] : max = i[1]
 
     res['chartData'] = r
     res['min'] = min
