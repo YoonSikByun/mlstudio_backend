@@ -51,23 +51,26 @@ def agGridGetRows(filePath : str, startRow : int, endRow : int, fields : list, s
         sql_query = f"SELECT {columns} \nFROM {read_function}('{filePath}') \nLIMIT {endRow-startRow} OFFSET {startRow}"
     else:
         sqlSearchMode = True
-        select_clause = '*'
+        select_clause = 'SELECT * '
         if 'select_clause' in sql and sql['select_clause']:
             select_clause = sql['select_clause']
 
         if 'where_clause' in sql and sql['where_clause']:
-            where_clause = '\nWHERE ' + sql['where_clause']
-        sql_query = f"SELECT {select_clause} \nFROM {read_function}('{filePath}') {where_clause} \nLIMIT {endRow-startRow} OFFSET {startRow}"
-        sql_count_query = f"SELECT {select_clause} \nFROM {read_function}('{filePath}') {where_clause}"
+            where_clause = '\n' + sql['where_clause']
+        sql_query = f"{select_clause} \nFROM {read_function}('{filePath}') {where_clause} \nLIMIT {endRow-startRow} OFFSET {startRow}"
+        sql_count_query = f"{select_clause} \nFROM {read_function}('{filePath}') {where_clause}"
+
+    print('----------------------')
+    print(sql_query)
+    print('----------------------')
 
     r = duckdb.sql(sql_query).df().replace({np.nan: 'NaN'}).to_dict('records')
 
     if startRow < 1 :
         res['lastRow'] = getRowCount(filePath, sql_count_query if sqlSearchMode else '')['row_count']
-        print(f'res[lastRow] : {res["lastRow"]}')
 
         cols = []
-        if select_clause != '' and select_clause != '*' :
+        if sql and 'select_clause' in sql and sql['select_clause']:
             for k, v in r[0].items() :
                 cols.append({'column_name' : k, 'column_type' : 'None', 'null' : 'None', 'key' : 'None', 'default' : 'None', 'extra' : 'None'})
             res['filteredColumnInfo'] = cols
@@ -83,6 +86,7 @@ def agGridGetRows(filePath : str, startRow : int, endRow : int, fields : list, s
 if __name__ == '__main__':
     # filePath = '/Users/yoonsikbyun/Documents/total_bank_data.csv'
     filePath = '/Users/yoonsikbyun/Documents/minikube_mnt/mlstudio/interface/sample/bank.csv'
+    # filePath = 'E:/minikube_mnt/mlstudio/interface/sample/kaggle/bank.csv'
     getColumnsInfo(filePath)
     print(getColumnsInfo(filePath))
     # agGridGetRows(filePath, 500000, 500002)
