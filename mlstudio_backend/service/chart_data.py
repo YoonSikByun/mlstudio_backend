@@ -1,14 +1,21 @@
 import duckdb
 import numpy as np
 
-def queryChartDdata(filePath : str, read_function : str, queryOption : dict) :
+def queryChartDdata(chartType : str, filePath : str, read_function : str, queryOption : dict) :
 
     xAxis = queryOption['xAxis']
     yAxis = queryOption['yAxis']
     yAxisValueType = queryOption['yAxisValueType']
     limitCount = queryOption['limitCount']
 
+    res = {}
+    res['dataCount'] = 0
+    res['chartType'] = chartType
+    res['chartData'] = None
+    res['success'] = True
+
     if yAxisValueType : yAxisValueType = yAxisValueType.lower()
+    if chartType : chartType = chartType.lower()
 
     fucntionField = ''
     if yAxisValueType == 'sum': 
@@ -18,7 +25,7 @@ def queryChartDdata(filePath : str, read_function : str, queryOption : dict) :
     elif yAxisValueType == 'count':
         fucntionField = f'COUNT({yAxis})'
     elif yAxisValueType == 'uniquecount':
-        fucntionField = f'COUNT(DISTINCT{yAxis})'
+        fucntionField = f'COUNT(DISTINCT {yAxis})'
     elif yAxisValueType == 'min':
         fucntionField = f'MIN({yAxis})'
     elif yAxisValueType == 'max':
@@ -32,40 +39,49 @@ def queryChartDdata(filePath : str, read_function : str, queryOption : dict) :
     print('--------------------------')
     print(sql_query)
     print('--------------------------')
-    
-    return duckdb.sql(sql_query).df().replace({np.nan: 0}).values.tolist()
-
-def getChartData(filePath : str, queryOption : dict) :
-    res = {}
-
-    if not filePath.lower().endswith(('.csv', '.parquet', '.parq')) :
-        raise TypeError(f'[{filePath}] This file format is not supported.')
-
-
-    read_function = 'read_csv'
-    if filePath.lower().endswith(('.parquet', '.parq')) :
-        read_function = 'read_parquet'
-
-    # chartType = queryOption['chartType']
-    
-    r = None
-    min = 0
-    max = 0
-
-    r = queryChartDdata(filePath, read_function, queryOption)
         
-    if len(r) > 0:
+    r = duckdb.sql(sql_query).df().replace({np.nan: 0}).values.tolist()
+
+    dataCount = len(r)
+    res['dataCount'] = dataCount
+
+    if dataCount < 1:
+        return res
+
+    if chartType == 'boxplot':
+        category = {}
+        for item in r:
+            if item[0] not in category:
+                category[item[0]] = []
+
+            category[item[0]].append(item[1])
+        
+        res['chartData'] = category
+
+    elif chartType == 'scatterplot':
         min = max = r[0][1]
         for i in r:
             if min > i[1] : min = i[1]
             if max < i[1] : max = i[1]
 
-    res['chartData'] = r
-    res['min'] = min
-    res['max'] = max
-    res['success'] = True
+        res['min'] = min
+        res['max'] = max
+    
+        res['chartData'] = r
 
     return res
+
+def getChartData(filePath : str, queryOption : dict) :
+    if not filePath.lower().endswith(('.csv', '.parquet', '.parq')) :
+        raise TypeError(f'[{filePath}] This file format is not supported.')
+
+    read_function = 'read_csv'
+    if filePath.lower().endswith(('.parquet', '.parq')) :
+        read_function = 'read_parquet'
+
+    chartType = queryOption['chartType']
+
+    return queryChartDdata(chartType, filePath, read_function, queryOption)
 
 
 if __name__ == '__main__':
@@ -96,7 +112,15 @@ if __name__ == '__main__':
     # sql = f"SELECT age, min(balance) FROM read_csv('{filePath}') group by age LIMIT 10"
 
     # unique count
-    sql = f"SELECT age, count(distinct balance) FROM read_csv('{filePath}') group by age LIMIT 10"
+    sql = f"SELECT job, balance FROM read_csv('{filePath}') LIMIT 1000"
 
-    r = duckdb.sql(sql).df().to_dict('records')
-    print(r)
+    r = duckdb.sql(sql).df().values.tolist()
+    
+    category = {}
+    for item in r:
+        if item[0] not in category:
+            category[item[0]] = []
+
+        category[item[0]].append(item[1])
+    
+    print(category)
