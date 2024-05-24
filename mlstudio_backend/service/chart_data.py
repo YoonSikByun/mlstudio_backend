@@ -6,7 +6,12 @@ def queryChartDdata(chartType : str, filePath : str, read_function : str, queryO
     xAxis = queryOption['xAxis']
     yAxis = queryOption['yAxis']
     yAxisValueType = queryOption['yAxisValueType']
+    isXCatergorical = queryOption['isXCatergorical']
     limitCount = queryOption['limitCount']
+
+    print('--------------------------')
+    print(queryOption)
+    print('--------------------------')
 
     res = {}
     res['dataCount'] = 0
@@ -49,6 +54,7 @@ def queryChartDdata(chartType : str, filePath : str, read_function : str, queryO
         return res
 
     if chartType == 'boxplot':
+    # if isXCatergorical :
         category = {}
         for item in r:
             if item[0] not in category:
@@ -57,8 +63,10 @@ def queryChartDdata(chartType : str, filePath : str, read_function : str, queryO
             category[item[0]].append(item[1])
         
         res['chartData'] = category
+    else:
+        res['chartData'] = r
 
-    elif chartType == 'scatterplot':
+    if chartType == 'scatterplot':
         min = max = r[0][1]
         for i in r:
             if min > i[1] : min = i[1]
@@ -66,8 +74,6 @@ def queryChartDdata(chartType : str, filePath : str, read_function : str, queryO
 
         res['min'] = min
         res['max'] = max
-    
-        res['chartData'] = r
 
     return res
 
@@ -117,10 +123,14 @@ if __name__ == '__main__':
     r = duckdb.sql(sql).df().values.tolist()
     
     category = {}
-    for item in r:
-        if item[0] not in category:
-            category[item[0]] = []
+    category_list = []
+    index = 0
+    for row in r:
+        if row[0] in category:
+            continue
+        category[row[0]] = index
+        category_list.append(row[0])
 
-        category[item[0]].append(item[1])
-    
-    print(category)
+    category_list.sort()    
+    print(category_list)
+        
