@@ -8,6 +8,7 @@ def queryChartDdata(chartType : str, filePath : str, read_function : str, queryO
     yAxisValueType = queryOption['yAxisValueType']
     isXCatergorical = queryOption['isXCatergorical']
     limitCount = queryOption['limitCount']
+    whereClause = queryOption['whereClause']
 
     print('--------------------------')
     print(queryOption)
@@ -36,16 +37,29 @@ def queryChartDdata(chartType : str, filePath : str, read_function : str, queryO
     elif yAxisValueType == 'max':
         fucntionField = f'MAX({yAxis})'
 
+    if whereClause:
+        whereClause = '\n' + whereClause
+
     if fucntionField:
-        sql_query = f"SELECT {xAxis}, {fucntionField} \nFROM {read_function}('{filePath}') \nGROUP BY {xAxis} \nLIMIT {limitCount} OFFSET 0"
+        sql_query = f"SELECT {xAxis}, {fucntionField} \nFROM {read_function}('{filePath}') {whereClause}\nGROUP BY {xAxis} \nLIMIT {limitCount} OFFSET 0"
     else:
-        sql_query = f"SELECT {xAxis}, {yAxis} \nFROM {read_function}('{filePath}') \nLIMIT {limitCount} OFFSET 0"
+        if yAxis:
+            sql_query = f"SELECT {xAxis}, {yAxis} \nFROM {read_function}('{filePath}') {whereClause}\nLIMIT {limitCount} OFFSET 0"
+        else:
+            sql_query = f"SELECT {xAxis} \nFROM {read_function}('{filePath}') {whereClause}\nLIMIT {limitCount} OFFSET 0"
     
     print('--------------------------')
     print(sql_query)
     print('--------------------------')
-        
-    r = duckdb.sql(sql_query).df().replace({np.nan: 0}).values.tolist()
+
+    if yAxis:
+        df = duckdb.sql(sql_query).df().replace({np.nan: None})
+        # r = df.sort_values(by=df.columns[0]).values.tolist()
+        r = df.values.tolist()
+        # hearder = df.columns.values.tolist()
+        # r.insert(0, hearder)
+    else:
+        r = duckdb.sql(sql_query).df().replace({np.nan: None}).stack().tolist()
 
     dataCount = len(r)
     res['dataCount'] = dataCount
@@ -54,14 +68,13 @@ def queryChartDdata(chartType : str, filePath : str, read_function : str, queryO
         return res
 
     if chartType == 'boxplot':
-    # if isXCatergorical :
         category = {}
         for item in r:
             if item[0] not in category:
                 category[item[0]] = []
 
             category[item[0]].append(item[1])
-        
+
         res['chartData'] = category
     else:
         res['chartData'] = r
@@ -93,8 +106,8 @@ def getChartData(filePath : str, queryOption : dict) :
 if __name__ == '__main__':
     import json
     # filePath = '/Users/yoonsikbyun/Documents/total_bank_data.csv'
-    # filePath = '/Users/yoonsikbyun/Documents/minikube_mnt/mlstudio/interface/sample/bank.csv'
-    filePath = 'E:/minikube_mnt/mlstudio/interface/sample/kaggle/bank.csv'
+    filePath = '/Users/yoonsikbyun/Documents/minikube_mnt/mlstudio/interface/sample/bank.csv'
+    # filePath = 'E:/minikube_mnt/mlstudio/interface/sample/kaggle/bank.csv'
     # queryOption = {
     # 'chartType' : 'Scatter',
     # 'xAxis' : 'age',
@@ -118,19 +131,23 @@ if __name__ == '__main__':
     # sql = f"SELECT age, min(balance) FROM read_csv('{filePath}') group by age LIMIT 10"
 
     # unique count
-    sql = f"SELECT job, balance FROM read_csv('{filePath}') LIMIT 1000"
+    sql = f"SELECT job, balance FROM read_csv('{filePath}') LIMIT 10"
 
-    r = duckdb.sql(sql).df().values.tolist()
+    df = duckdb.sql(sql).df()
+    hearder = df.columns.values.tolist()
+    l = df.sort_values(by=df.columns[0]).values.tolist()
+    l.insert(0, hearder)
+    print(l)
     
-    category = {}
-    category_list = []
-    index = 0
-    for row in r:
-        if row[0] in category:
-            continue
-        category[row[0]] = index
-        category_list.append(row[0])
+    # category = {}
+    # category_list = []
+    # index = 0
+    # for row in r:
+    #     if row[0] in category:
+    #         continue
+    #     category[row[0]] = index
+    #     category_list.append(row[0])
 
-    category_list.sort()    
-    print(category_list)
+    # category_list.sort()    
+    # print(category_list)
         
