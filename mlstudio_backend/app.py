@@ -1,8 +1,7 @@
 from flask import Flask, request, jsonify
 import traceback
 from library.util import Response, get_timestamp
-from mlstudio_backend.service import grid_data, json_data
-from service import chart_data
+from service import grid_data, json_data, chart_data
 import os
 
 app = Flask(__name__)
@@ -70,7 +69,7 @@ def get_text_data(request):
         if ext == '.json' or ext == '.meta' :  
             data = json_data.readJSONFile(file_path=filePath)
         else:
-            raise Exception('This file is in an unsupported format.')
+            raise Exception(f'[{filePath}] This file is in an unsupported format.')
     
         rtn = {'status': True, 'reason': 'success', 'data' : data}
 
