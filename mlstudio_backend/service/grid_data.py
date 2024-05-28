@@ -87,7 +87,6 @@ def agGridGetRows(filePath : str, startRow : int, endRow : int, fields : list, s
 
     return res
 
-
 if __name__ == '__main__':
     filePath = '/Users/yoonsikbyun/Documents/minikube_mnt/mlstudio/interface/sample/total_bank_data.csv'
     # filePath = '/Users/yoonsikbyun/Documents/minikube_mnt/mlstudio/interface/sample/bank.csv'

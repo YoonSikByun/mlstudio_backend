@@ -1,7 +1,9 @@
 from flask import Flask, request, jsonify
 import traceback
 from library.util import Response, get_timestamp
-from service import read_file, chart_data
+from mlstudio_backend.service import grid_data, json_data
+from service import chart_data
+import os
 
 app = Flask(__name__)
 app.config['DEBUG'] = False
@@ -19,6 +21,8 @@ def data(option):
         ret = ag_grid_dataview(request)
     elif option == 'chart_data':
         ret = get_chart_data(request)
+    elif option == 'text_data':
+        ret = get_text_data(request)
     else:
         ret = {'status': False, 'reason': f'"{option}" is unacceptable option.'}
 
@@ -33,11 +37,8 @@ def ag_grid_dataview(request):
         fields = data['fields'] if 'fields' in data else []
         sql = data['sql'] if 'sql' in data else {}
 
-        print(filePath)
-
-        data = read_file.agGridGetRows(filePath=filePath, startRow=startRow, endRow=endRow, fields=fields, sql=sql)
+        data = grid_data.agGridGetRows(filePath=filePath, startRow=startRow, endRow=endRow, fields=fields, sql=sql)
         rtn = {'status': True, 'reason': 'success', 'data' : data}
-
     except BaseException:
         msg = traceback.format_exc()
         rtn = {'status': False, 'reason': msg}
@@ -48,9 +49,29 @@ def get_chart_data(request):
     try:
         data = request.get_json(force=True)
         filePath = data['filePath'] if 'filePath' in data else ''
-        data['queryOption']
   
         data = chart_data.getChartData(filePath=filePath, queryOption=data['queryOption'])
+        rtn = {'status': True, 'reason': 'success', 'data' : data}
+    except BaseException:
+        msg = traceback.format_exc()
+        rtn = {'status': False, 'reason': msg}
+
+    return rtn
+
+def get_text_data(request):
+    try:
+        data = request.get_json(force=True)
+        filePath = data['filePath'] if 'filePath' in data else ''
+
+        fileName = os.path.basename(filePath)
+        fileName, ext = os.path.splitext(fileName)
+        ext = ext.lower()
+
+        if ext == '.json' or ext == '.meta' :  
+            data = json_data.readJSONFile(file_path=filePath)
+        else:
+            raise Exception('This file is in an unsupported format.')
+    
         rtn = {'status': True, 'reason': 'success', 'data' : data}
 
     except BaseException:
@@ -58,6 +79,7 @@ def get_chart_data(request):
         rtn = {'status': False, 'reason': msg}
 
     return rtn
+
 
 def start(standalone_mode=False):
 
