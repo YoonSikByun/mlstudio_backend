@@ -67,16 +67,11 @@ def agGridGetRows(filePath : str, startRow : int, endRow : int, fields : list, s
             where_clause = '\n' + sql['where_clause']
         sql_query = f"{select_clause} \nFROM {read_function}('{filePath}') {where_clause}"
 
-    print('--------------------')
-    print(sql_query)
-    print('--------------------')
-
     r = duckdb.sql(sql_query + f" \nLIMIT {endRow-startRow} OFFSET {startRow}").df().replace({np.nan: 'NaN'}).to_dict('records')
 
     if startRow < 1 :
         res['lastRow'] = getRowCount(filePath, sql_query if sqlSearchMode else '')['row_count']
 
-        cols = []
         if sql and 'select_clause' in sql and sql['select_clause']:
             res['filteredColumnInfo'] = getColumnsInfo(sql_query=sql_query)
 
