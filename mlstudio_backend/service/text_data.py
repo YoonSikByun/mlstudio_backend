@@ -16,4 +16,4 @@ def readTextFile(file_path : str) :
         with open(file_path, 'r') as fp :
             textData = fp.read()
 
-    return textData
+    return {'text' : textData}
