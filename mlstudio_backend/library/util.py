@@ -1,7 +1,7 @@
-from collections import defaultdict
+from flask import make_response, json
+import gzip
 
 import datetime
-import os
 
 def get_timestamp(mode='now'):
     """
@@ -23,8 +23,7 @@ def get_timestamp(mode='now'):
 from flask import jsonify
 
 class Response:
-    def __init__(self, status=9999, message='Not known error', data=None, ret=None, option=''):
-
+    def __init__(self, status=9999, message='Not known error', data=None, ret=None, option='', compress=False):
         if ret:
             if option and option == 'web':
                 self.status = 0 if ret['status'] else 400
@@ -38,38 +37,58 @@ class Response:
             self.data = data
 
         self.option = option
+        self.compress = compress
 
     def get_JSON(self):
         if self.status == 0:
             custom_status = 200
         else:
             custom_status = 500
-
+        ret = None
         if self.option != 'web':
-            return {'message': self.data or self.message}, custom_status
+            ret = {'message': self.data or self.message}, custom_status
+        else:
+            if not self.data:
+                ret = {'status': self.status, 'statusText': self.message, 'data': {}}, custom_status
+            elif type(self.data) == str:
+                self.data = {self.data}
+            ret = {'status': self.status, 'statusText': self.message, 'data': self.data}, custom_status
 
-        if not self.data:
-            return {'status': self.status, 'statusText': self.message, 'data': {}}, custom_status
+        if self.compress:
+            content = gzip.compress(json.dumps(ret).encode('utf8'), 5)
+            response = make_response(content)
+            response.headers['Content-length'] = len(content)
+            response.headers['Content-Encoding'] = 'gzip'
+        else:
+            return ret
 
-        if type(self.data) == str:
-            self.data = {self.data}
-        return {'status': self.status, 'statusText': self.message, 'data': self.data}, custom_status
+        return response
 
     def get(self):
+        ret = None
         if self.status == 0:
             custom_status = 200
         else:
             custom_status = 500
 
         if self.option != 'web':
-            return jsonify({'message': self.data or self.message}), custom_status
+            ret = jsonify({'message': self.data or self.message}), custom_status
+        else:
+            if not self.data:
+                ret = jsonify({'status': self.status, 'statusText': self.message, 'data': {}}), custom_status
+            elif type(self.data) == str:
+                self.data = {self.data}
+            ret = jsonify({'status': self.status, 'statusText': self.message, 'data': self.data}), custom_status
 
-        if not self.data:
-            return jsonify({'status': self.status, 'statusText': self.message, 'data': {}}), custom_status
+        if self.compress:
+            content = gzip.compress(json.dumps(ret).encode('utf8'), 5)
+            response = make_response(content)
+            response.headers['Content-length'] = len(content)
+            response.headers['Content-Encoding'] = 'gzip'
+        else:
+            return ret
 
-        if type(self.data) == str:
-            self.data = {self.data}
-        return jsonify({'status': self.status, 'statusText': self.message, 'data': self.data}), custom_status
+        return response
 
     @staticmethod
     def error_JSON(msg, status=9999, data=None):
