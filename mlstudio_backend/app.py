@@ -71,7 +71,7 @@ def get_text_data(request):
 
         if ext == '.json' or ext == '.meta' :  
             data = text_data.readJSONFile(file_path=filePath)
-        elif ext == '.cfg' or ext == '.conf' or ext == '.txt' or ext == '.sh':
+        elif ext == '.cfg' or ext == '.conf' or ext == '.txt' or ext == '.sh' or ext == '.py':
             data = text_data.readTextFile(file_path=filePath)
         else:
             raise Exception('This file is in an unsupported format.')
