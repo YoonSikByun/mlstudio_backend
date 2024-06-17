@@ -6,6 +6,20 @@ from mlflow.server import get_app_client
 # tracking_uri = "http://127.0.0.1:32050/"
 tracking_uri = "http://mlflow-server-svc.default.svc.cluster.local:5000"
 
+import subprocess
+import os
+
+def create_known_hosts_file() :
+    file_path = os.path.join(os.environ['HOME'], '.ssh', 'known_hosts')
+    
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    
+    cmd = ['ssh-keyscan', '-t', 'ed25519', 'sftp-server.default.svc.cluster.local']
+    
+    with open(file_path, "w") as outfile:
+        subprocess.run(cmd, stdout=outfile)
+
 # ML Flow 사용자를 추가한다.
 def create_user(login_id, login_pwd, user_id, user_pwd) :
   os.environ['MLFLOW_TRACKING_USERNAME'] = login_id
